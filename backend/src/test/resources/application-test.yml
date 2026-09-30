@@ -22,7 +22,8 @@ spring:
 flowdeck:
   auth:
     jwt-secret: dGVzdC1vbmx5LXNlY3JldC1ub3QtdXNlZC1mb3ItYW55dGhpbmctcmVhbA==
-    jwt-expiry-minutes: 60
+    access-token-expiry-minutes: 15
+    refresh-token-expiry-days: 30
   cors:
     allowed-origins: http://localhost:5173
 

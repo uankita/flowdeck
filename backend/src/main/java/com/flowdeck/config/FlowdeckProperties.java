@@ -22,7 +22,10 @@ public record FlowdeckProperties(@NotNull @Valid Auth auth, @NotNull @Valid Cors
     public record Auth(
             @NotBlank(message = "flowdeck.auth.jwt-secret must be set (env JWT_SECRET)")
             String jwtSecret,
-            @Positive int jwtExpiryMinutes) {}
+            /** Access tokens are deliberately short-lived; see {@code AccessTokenService}. */
+            @Positive int accessTokenExpiryMinutes,
+            /** Refresh tokens live in Redis, not the JWT itself; see {@code RefreshTokenService}. */
+            @Positive int refreshTokenExpiryDays) {}
 
     public record Cors(
             @NotEmpty(message = "at least one allowed origin is required")

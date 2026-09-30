@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,12 +29,16 @@ public class BoardController {
     private final BoardService boardService;
 
     @GetMapping
+    @PreAuthorize(
+            "@workspaceAuthorization.hasAtLeastRole(#workspaceId, T(com.flowdeck.domain.WorkspaceRole).VIEWER)")
     @Operation(summary = "List all non-archived boards in a workspace")
     public List<BoardSummaryResponse> listBoards(@PathVariable UUID workspaceId) {
         return boardService.listActiveBoards(workspaceId);
     }
 
     @GetMapping("/{boardKey}")
+    @PreAuthorize(
+            "@workspaceAuthorization.hasAtLeastRole(#workspaceId, T(com.flowdeck.domain.WorkspaceRole).VIEWER)")
     @Operation(summary = "Fetch one board with its lists and cards")
     public BoardDetailResponse getBoard(
             @PathVariable UUID workspaceId, @PathVariable String boardKey) {
@@ -41,6 +46,8 @@ public class BoardController {
     }
 
     @PostMapping
+    @PreAuthorize(
+            "@workspaceAuthorization.hasAtLeastRole(#workspaceId, T(com.flowdeck.domain.WorkspaceRole).MEMBER)")
     @Operation(summary = "Create a board, seeded with the default lists")
     public ResponseEntity<BoardDetailResponse> createBoard(
             @PathVariable UUID workspaceId, @Valid @RequestBody CreateBoardRequest request) {
