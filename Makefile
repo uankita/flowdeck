@@ -56,8 +56,8 @@ test: test-backend test-frontend ## Run all tests
 test-backend: ## Run backend tests (spins up Postgres via Testcontainers)
 	cd backend && $(TESTCONTAINERS_ENV) mvn test
 
-test-frontend: ## Typecheck and build the frontend
-	cd frontend && npm run build
+test-frontend: ## Lint, typecheck, and build the frontend
+	cd frontend && npm run lint && npm run build
 
 build: ## Build both applications
 	cd backend && mvn -DskipTests package

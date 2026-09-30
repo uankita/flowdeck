@@ -3,6 +3,52 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Design tokens as CSS variables, in "R G B" (space-separated, no commas)
+   * so Tailwind can apply its own alpha channel: rgb(var(--color-x) / 50%).
+   * tailwind.config.js's `colors` block is the only other place these names
+   * are referenced — components never touch a variable or a hex value
+   * directly, just Tailwind utilities like `bg-surface` or `text-ink-muted`.
+   */
+  :root {
+    --color-surface: 255 255 255;
+    --color-surface-muted: 246 247 249;
+    --color-surface-sunken: 236 238 241;
+
+    --color-ink: 20 23 31;
+    --color-ink-muted: 91 100 114;
+    --color-ink-faint: 139 148 163;
+
+    --color-accent: 59 91 219;
+    --color-accent-soft: 231 236 253;
+
+    --color-border: 226 229 234;
+
+    --color-danger: 220 38 38;
+    --color-danger-soft: 254 226 226;
+    --color-success: 22 163 74;
+  }
+
+  /* Same token names, dark values — see tailwind.config.js's darkMode: 'class'. */
+  .dark {
+    --color-surface: 24 26 32;
+    --color-surface-muted: 17 19 24;
+    --color-surface-sunken: 34 37 45;
+
+    --color-ink: 237 239 243;
+    --color-ink-muted: 163 170 181;
+    --color-ink-faint: 106 114 126;
+
+    --color-accent: 108 137 255;
+    --color-accent-soft: 39 46 74;
+
+    --color-border: 48 52 61;
+
+    --color-danger: 248 113 113;
+    --color-danger-soft: 63 27 30;
+    --color-success: 74 222 128;
+  }
+
   html,
   body,
   #root {
@@ -14,5 +60,12 @@
     font-family:
       ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
       Arial, sans-serif;
+  }
+
+  /* One declaration, not one per component: every focusable element gets a
+     visible, theme-aware ring instead of relying on (or fighting) the
+     browser default. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-surface;
   }
 }

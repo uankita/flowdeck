@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flowdeck</title>
+    <script>
+      // Applies the dark class before React (or even the first paint) runs,
+      // so there's no flash of the wrong theme. Mirrors the logic in
+      // src/hooks/useDarkMode.ts exactly — if you change the storage key or
+      // the fallback there, change it here too.
+      (function () {
+        var stored = localStorage.getItem('flowdeck-theme')
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
+          document.documentElement.classList.add('dark')
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
