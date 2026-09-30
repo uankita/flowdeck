@@ -1,9 +1,10 @@
 package com.flowdeck.repository;
 
 import com.flowdeck.domain.Board;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,8 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
 
     boolean existsByWorkspaceIdAndBoardKey(UUID workspaceId, String boardKey);
 
-    List<Board> findAllByWorkspaceIdAndArchivedFalseOrderByNameAsc(UUID workspaceId);
+    /** Sort order comes from the caller's {@code Pageable} — see {@code BoardController}'s {@code @PageableDefault}. */
+    Page<Board> findAllByWorkspaceIdAndArchivedFalse(UUID workspaceId, Pageable pageable);
 
     /**
      * Loads a board with its lists and cards.

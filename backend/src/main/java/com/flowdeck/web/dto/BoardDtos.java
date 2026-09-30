@@ -23,6 +23,12 @@ public final class BoardDtos {
             @NotBlank @Size(max = 200) String name,
             @Size(max = 2000) String description) {}
 
+    /** {@code boardKey} is immutable once created — not offered here. */
+    public record UpdateBoardRequest(
+            @NotBlank @Size(max = 200) String name,
+            @Size(max = 2000) String description,
+            boolean archived) {}
+
     public record BoardSummaryResponse(
             UUID id,
             String boardKey,
@@ -43,13 +49,15 @@ public final class BoardDtos {
             Instant updatedAt) {}
 
     public record BoardListResponse(
-            UUID id, String name, String rank, Integer wipLimit, List<CardResponse> cards) {}
+            UUID id, String name, String rank, Integer wipLimit, long version, List<CardResponse> cards) {}
 
+    /** {@code version} is what a client must echo back in {@code UpdateCardRequest} to update this card. */
     public record CardResponse(
             UUID id,
             String title,
             String description,
             String rank,
             CardPriority priority,
-            Instant dueAt) {}
+            Instant dueAt,
+            long version) {}
 }

@@ -9,11 +9,16 @@ import com.flowdeck.util.RankGenerator;
 import com.flowdeck.web.dto.BoardDtos.BoardDetailResponse;
 import com.flowdeck.web.dto.BoardDtos.BoardSummaryResponse;
 import com.flowdeck.web.dto.BoardDtos.CreateBoardRequest;
+import com.flowdeck.web.dto.BoardDtos.UpdateBoardRequest;
+import com.flowdeck.web.dto.PageResponse;
 import com.flowdeck.web.mapper.BoardMapper;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +35,12 @@ public class BoardService {
     private final BoardMapper boardMapper;
 
     @Transactional(readOnly = true)
-    public List<BoardSummaryResponse> listActiveBoards(UUID workspaceId) {
-        return boardMapper.toSummaries(
-                boardRepository.findAllByWorkspaceIdAndArchivedFalseOrderByNameAsc(workspaceId));
+    public PageResponse<BoardSummaryResponse> listActiveBoards(UUID workspaceId, Pageable pageable) {
+        Page<BoardSummaryResponse> page =
+                boardRepository
+                        .findAllByWorkspaceIdAndArchivedFalse(workspaceId, pageable)
+                        .map(boardMapper::toSummary);
+        return PageResponse.of(page);
     }
 
     @Transactional(readOnly = true)
@@ -41,6 +49,31 @@ public class BoardService {
                 .findWithListsAndCardsByWorkspaceIdAndBoardKey(workspaceId, boardKey)
                 .map(boardMapper::toDetail)
                 .orElseThrow(() -> new BoardNotFoundException(boardKey));
+    }
+
+    /** {@code boardKey} isn't offered for change — see {@link UpdateBoardRequest}'s Javadoc. */
+    @Transactional
+    public BoardDetailResponse updateBoard(UUID workspaceId, String boardKey, UpdateBoardRequest request) {
+        Board board =
+                boardRepository
+                        .findWithListsAndCardsByWorkspaceIdAndBoardKey(workspaceId, boardKey)
+                        .orElseThrow(() -> new BoardNotFoundException(boardKey));
+        board.setName(request.name());
+        board.setDescription(request.description());
+        board.setArchived(request.archived());
+        return boardMapper.toDetail(boardRepository.save(board));
+    }
+
+    /** Soft delete — see {@link Board}'s Javadoc for what that means for its lists, cards, and history. */
+    @Transactional
+    public void deleteBoard(UUID workspaceId, String boardKey) {
+        Board board =
+                boardRepository
+                        .findByWorkspaceIdAndBoardKey(workspaceId, boardKey)
+                        .orElseThrow(() -> new BoardNotFoundException(boardKey));
+        board.setDeletedAt(Instant.now());
+        boardRepository.save(board);
+        log.info("Soft-deleted board {} ({}) in workspace {}", board.getBoardKey(), board.getId(), workspaceId);
     }
 
     @Transactional
