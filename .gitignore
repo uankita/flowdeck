@@ -1,0 +1,36 @@
+# ── Secrets ───────────────────────────────────────────────
+.env
+.env.local
+*.local.env
+
+# ── Java / Maven ──────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+*.class
+*.jar
+*.war
+hs_err_pid*
+replay_pid*
+
+# ── Node / Vite ───────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Editors / OS ──────────────────────────────────────────
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# ── Test / coverage ───────────────────────────────────────
+coverage/
+.nyc_output/

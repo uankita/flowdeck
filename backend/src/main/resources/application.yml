@@ -1,0 +1,189 @@
+# Flowdeck backend configuration.
+#
+# Shared settings live in this first document; the `local` and `prod` documents
+# below layer on top of it. Pick one with SPRING_PROFILES_ACTIVE (see .env.example).
+#
+# Convention: `local` supplies working defaults so a fresh clone boots against
+# `make up` with no env vars set. `prod` deliberately supplies NO defaults for
+# credentials or hosts — a missing variable fails startup instead of silently
+# falling back to a development value.
+
+spring:
+  application:
+    name: flowdeck
+  profiles:
+    default: local
+
+  jpa:
+    # Schema is owned by Flyway; Hibernate only verifies it matches the entities.
+    hibernate:
+      ddl-auto: validate
+    # Avoids holding a connection open for the whole request and lazy-loading
+    # from the view layer.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # Flyway owns the schema from V1, so an existing non-empty database is a
+    # mistake we want surfaced rather than baselined over.
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      # Surfaces the Postgres and Redis component checks at /actuator/health.
+      show-details: when_authorized
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+flowdeck:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    jwt-expiry-minutes: ${JWT_EXPIRY_MINUTES:60}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+logging:
+  level:
+    root: INFO
+
+---
+# ── local ───────────────────────────────────────────────────────────────────
+# Targets the containers defined in docker/docker-compose.yml.
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:flowdeck}
+    username: ${DB_USER:flowdeck}
+    password: ${DB_PASSWORD:flowdeck_dev_only}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: 2
+      connection-timeout: 10000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:flowdeck_dev_only}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 1
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+flowdeck:
+  auth:
+    # Dev-only fallback so a fresh clone boots without a .env; `prod` has none.
+    jwt-secret: ${JWT_SECRET:ZGV2LW9ubHktaW5zZWN1cmUtc2VjcmV0LXJlcGxhY2UtbWUtYmVmb3JlLXByb2Q=}
+
+logging:
+  level:
+    com.flowdeck: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.hibernate.SQL: DEBUG
+
+---
+# ── prod ────────────────────────────────────────────────────────────────────
+# Every value below is required. Startup fails fast on a missing variable.
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: 5
+      connection-timeout: 10000
+      leak-detection-threshold: 30000
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 16
+          min-idle: 4
+
+  jpa:
+    show-sql: false
+
+server:
+  # Behind a load balancer / ingress terminating TLS.
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+springdoc:
+  # Interactive docs stay off in production; the JSON spec remains available
+  # for gateway tooling. Flip via env if you front it with auth.
+  swagger-ui:
+    enabled: ${SWAGGER_UI_ENABLED:false}
+
+logging:
+  level:
+    com.flowdeck: INFO
+    org.hibernate.SQL: WARN

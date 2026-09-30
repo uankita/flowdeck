@@ -1,0 +1,61 @@
+# Flowdeck local infrastructure: Postgres 16 + Redis 7.
+#
+# Run from the REPO ROOT so the root .env is picked up for ${...} interpolation:
+#   docker compose --env-file .env -f docker/docker-compose.yml up -d
+# or simply `make up`.
+
+name: flowdeck
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flowdeck-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-flowdeck}
+      POSTGRES_USER: ${POSTGRES_USER:-flowdeck}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowdeck_dev_only}
+      # Keep the cluster in a subdirectory so the volume mount point itself
+      # never has to be empty-on-init.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # Both -U and -d matter: pg_isready reports ready on the bootstrap
+      # database before the app database exists.
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowdeck} -d ${POSTGRES_DB:-flowdeck}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: flowdeck-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-flowdeck_dev_only}
+      - --appendonly
+      - "yes"
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-flowdeck_dev_only} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  postgres-data:
+    name: flowdeck-postgres-data
+  redis-data:
+    name: flowdeck-redis-data

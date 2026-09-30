@@ -1,0 +1,32 @@
+# Test profile. The datasource is deliberately absent: @ServiceConnection on
+# the Testcontainers Postgres supplies url/username/password at runtime.
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    clean-disabled: true
+
+  data:
+    redis:
+      # Lettuce connects lazily, so no Redis container is needed for the
+      # tests in this module. Add one with @ServiceConnection if a test
+      # starts exercising cache or pub/sub behaviour.
+      host: localhost
+      port: 6379
+
+flowdeck:
+  auth:
+    jwt-secret: dGVzdC1vbmx5LXNlY3JldC1ub3QtdXNlZC1mb3ItYW55dGhpbmctcmVhbA==
+    jwt-expiry-minutes: 60
+  cors:
+    allowed-origins: http://localhost:5173
+
+logging:
+  level:
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
